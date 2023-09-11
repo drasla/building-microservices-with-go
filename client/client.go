@@ -2,29 +2,22 @@ package client
 
 import (
 	"building-microservices-with-go/contract"
-	"fmt"
-	"log"
-	"net/rpc"
+	"bytes"
+	"encoding/json"
+	"net/http"
 )
 
-const port = 1234
+func PerformRequest() contract.HelloWorldResponse {
+	r, _ := http.Post(
+		"http://localhost:1234",
+		"application/json",
+		bytes.NewBuffer([]byte(`{"id": 1, "method": "HelloWorldHandler.HelloWorld", "params": [{"name": "World"}]}`)),
+	)
+	defer r.Body.Close()
 
-func CreateClient() *rpc.Client {
-	client, err := rpc.DialHTTP("tcp", fmt.Sprintf("localhost:%v", port))
-	if err != nil {
-		log.Fatal("dialing:", err)
-	}
-	return client
-}
+	decoder := json.NewDecoder(r.Body)
+	var response contract.HelloWorldResponse
+	decoder.Decode(&response)
 
-func PerformRequest(client *rpc.Client) contract.HelloWorldResponse {
-	args := &contract.HelloWorldRequest{Name: "World"}
-	var reply contract.HelloWorldResponse
-
-	err := client.Call("HelloWorldHandler.HelloWorld", args, &reply)
-	if err != nil {
-		log.Fatal("error:", err)
-	}
-
-	return reply
+	return response
 }

@@ -5,5 +5,5 @@ type HelloWorldRequest struct {
 }
 
 type HelloWorldResponse struct {
-	Message string
+	Message string `json:"message"`
 }
