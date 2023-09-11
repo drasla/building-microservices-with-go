@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 )
@@ -24,15 +23,20 @@ type helloWorldRequest struct {
 	Name string `json:"name"`
 }
 
-func hellowWorldHandler(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
-		return
-	}
+const port = 8080
 
+func server() {
+	http.HandleFunc("/helloworld", hellowWorldHandler)
+
+	log.Printf("Server starting on port %v\n", port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), nil))
+}
+
+func hellowWorldHandler(w http.ResponseWriter, r *http.Request) {
 	var request helloWorldRequest
-	err = json.Unmarshal(body, &request)
+	decoder := json.NewDecoder(r.Body)
+
+	err := decoder.Decode(&request)
 	if err != nil {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
@@ -45,10 +49,5 @@ func hellowWorldHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	port := 8080
-
-	http.HandleFunc("/helloworld", hellowWorldHandler)
-
-	log.Printf("Server starting on port %v\n", port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), nil))
+	server()
 }
