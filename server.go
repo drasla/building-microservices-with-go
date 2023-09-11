@@ -23,9 +23,13 @@ type helloWorldRequest struct {
 	Name string `json:"name"`
 }
 
+type Something struct{}
+
 const port = 8080
 
 func server() {
+	cathandler := http.FileServer(http.Dir("./images"))
+	http.Handle("/cat/", http.StripPrefix("/cat/", cathandler))
 	http.HandleFunc("/helloworld", hellowWorldHandler)
 
 	log.Printf("Server starting on port %v\n", port)
