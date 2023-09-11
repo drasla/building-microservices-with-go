@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"net/rpc"
 )
 
@@ -18,17 +19,16 @@ func main() {
 func StartServer() {
 	helloWorld := &HelloWorldHandler{}
 	rpc.Register(helloWorld)
+	rpc.HandleHTTP()
 
 	l, err := net.Listen("tcp", fmt.Sprintf(":%v", port))
 	if err != nil {
 		log.Fatal(fmt.Sprintf("Unable to listen on given port: %s", err))
 	}
-	defer l.Close()
 
-	for {
-		conn, _ := l.Accept()
-		go rpc.ServeConn(conn)
-	}
+	log.Printf("Server starting on Port %v\n", port)
+
+	http.Serve(l, nil)
 }
 
 type HelloWorldHandler struct{}

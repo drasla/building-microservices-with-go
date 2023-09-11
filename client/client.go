@@ -10,7 +10,7 @@ import (
 const port = 1234
 
 func CreateClient() *rpc.Client {
-	client, err := rpc.Dial("tcp", fmt.Sprintf("localhost:%v", port))
+	client, err := rpc.DialHTTP("tcp", fmt.Sprintf("localhost:%v", port))
 	if err != nil {
 		log.Fatal("dialing:", err)
 	}
