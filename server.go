@@ -7,6 +7,10 @@ import (
 	"net/http"
 )
 
+type helloWorldRequest struct {
+	Name string `json:"name"`
+}
+
 type helloWorldResponse struct {
 	// Go에서는 소문자로 시작되는 프로퍼티는 export가 불가능하기 때문에 필요할 경우 태그를 이용함
 	// json 출력 필드를 "message"르 변경함
@@ -19,37 +23,48 @@ type helloWorldResponse struct {
 	Id int `json:"id, string"`
 }
 
-type helloWorldRequest struct {
-	Name string `json:"name"`
+type validationHandler struct {
+	next http.Handler
 }
-
-type Something struct{}
 
 const port = 8080
 
-func server() {
-	cathandler := http.FileServer(http.Dir("./images"))
-	http.Handle("/cat/", http.StripPrefix("/cat/", cathandler))
-	http.HandleFunc("/helloworld", hellowWorldHandler)
-
-	log.Printf("Server starting on port %v\n", port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), nil))
+func newValidationHandler(next http.Handler) http.Handler {
+	return validationHandler{next: next}
 }
 
-func hellowWorldHandler(w http.ResponseWriter, r *http.Request) {
+func (h validationHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	var request helloWorldRequest
 	decoder := json.NewDecoder(r.Body)
 
 	err := decoder.Decode(&request)
 	if err != nil {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		http.Error(rw, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
-	response := helloWorldResponse{Message: "Hello " + request.Name}
+	h.next.ServeHTTP(rw, r)
+}
 
-	encoder := json.NewEncoder(w)
+type helloWorldHandler struct{}
+
+func newHelloWorldHandler() http.Handler {
+	return helloWorldHandler{}
+}
+
+func (h helloWorldHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	response := helloWorldResponse{Message: "Hello"}
+	encoder := json.NewEncoder(rw)
 	encoder.Encode(response)
+}
+
+func server() {
+	handler := newValidationHandler(newHelloWorldHandler())
+
+	http.Handle("/helloworld", handler)
+
+	log.Printf("Server starting on port %v\n", port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), nil))
 }
 
 func main() {
